@@ -111,7 +111,7 @@ html.custom-width-dragging .player-full-win:not(.hide-aside-area) .player-and-as
   height: 100vh;
   width: 0;
   position: absolute;
-  right: var(--live-chat-panel-width);
+  left: var(--be-live-player-width);
   top: 0;
   @include v-stretch();
   .player-full-win:not(.hide-aside-area) & {

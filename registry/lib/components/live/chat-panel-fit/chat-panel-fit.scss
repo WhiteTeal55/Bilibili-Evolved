@@ -165,8 +165,22 @@
     }
 
     @container aside-area (max-width: 299px) {
+      // SC 气泡
+      /*.msg-bubble-setting {
+        transform-origin: left top;
+        // min-width: 300px;
+        scale: var(--live-chat-panel-scale);
+      }*/
+
+      // PK 投票栏
+      .pk-multiplier-card-root {
+        scale: var(--live-chat-panel-scale);
+        min-width: 300px;
+        transform-origin: left bottom;
+      }
+
       .chat-history-panel {
-        // SC / 礼物 / 进场广播栏
+        // SC 列表 / 礼物气泡 / 进场广播
         .chat-overlay-layer {
           transform-origin: left top;
           min-width: 300px;
@@ -213,6 +227,7 @@
         }
         // 聊天栏
         .chat-input-ctnr {
+          // 隐藏粉丝勋章
           .medal-section {
             display: none !important;
           }
