@@ -166,11 +166,11 @@
 
     @container aside-area (max-width: 299px) {
       // SC 气泡
-      /*.msg-bubble-setting {
+      .msg-bubble-setting {
         transform-origin: left top;
-        // min-width: 300px;
         scale: var(--live-chat-panel-scale);
-      }*/
+        left: calc(344px * var(--live-chat-panel-scale)) !important;
+      }
 
       // PK 投票栏
       .pk-multiplier-card-root {
