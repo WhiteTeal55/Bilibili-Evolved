@@ -190,7 +190,18 @@ export const builtInActions: Record<string, KeyBindingAction> = {
   },
   danmaku: {
     displayName: '弹幕开关',
-    run: () => playerAgent.toggleDanmaku(),
+    run: () => {
+      const result = playerAgent.toggleDanmaku()
+      if (lodash.isNil(result)) {
+        return result
+      }
+      if (result) {
+        showTip('弹幕已开启', 'mdi-comment-text')
+      } else {
+        showTip('弹幕已关闭', 'mdi-comment-text-outline')
+      }
+      return true
+    },
   },
   longJumpBackward: {
     displayName: '长倒退',
