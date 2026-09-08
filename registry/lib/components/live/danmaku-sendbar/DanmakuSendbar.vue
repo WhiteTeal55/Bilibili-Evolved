@@ -5,6 +5,7 @@
       placeholder="发个弹幕呗~"
       :value="value"
       maxlength="30"
+      autocomplete="off"
       @keydown.enter="send()"
       @input="updateValue($event.target.value)"
       @focus="setControlBarLocked(true)"
