@@ -20,6 +20,7 @@ const unsupportedUrls = [
   /^https:\/\/member\.bilibili\.com\//,
   /^https:\/\/security\.bilibili\.com\//,
   /^https:\/\/www\.bilibili\.com\/audio\//,
+  /^https:\/\/www\.bilibili\.com\/blackroom\//,
   /^https:\/\/www\.bilibili\.com\/festival\//,
   /^https:\/\/www\.bilibili\.com\/protocal\//,
   /^https:\/\/www\.bilibili\.com\/v\/copyright\//,
