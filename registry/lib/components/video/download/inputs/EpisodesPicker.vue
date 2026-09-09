@@ -237,6 +237,15 @@ $collapse-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .be-check-box {
       padding: 2px 6px;
+      // VButton 的 .content-container 也会阻止收缩, 需一并放开
+      .content-container,
+      .text-container {
+        min-width: 0;
+      }
+    }
+    .episode-title {
+      min-width: 0;
+      overflow-wrap: break-word;
     }
     .episode-duration {
       margin-right: 4px;
