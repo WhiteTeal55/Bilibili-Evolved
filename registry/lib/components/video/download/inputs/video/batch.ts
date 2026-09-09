@@ -81,8 +81,7 @@ export const videoSeasonBatchInput: DownloadVideoInput = {
         [],
       )
       const validSections = sections.filter(
-        (section): section is { title?: string; episodes: any[] } =>
-          (section.episodes?.length ?? 0) > 0,
+        (section): section is { title?: string; episodes: any[] } => !!section.episodes?.length,
       )
       if (validSections.length === 0) {
         return []

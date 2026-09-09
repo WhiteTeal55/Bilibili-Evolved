@@ -51,7 +51,7 @@
             class="select-section"
             title="全选此子合集"
             type="transparent"
-            @click.stop="setSectionChecked(section, true)"
+            @click.stop="forEachSectionItem(section, it => (it.isChecked = true))"
           >
             <VIcon :size="14" icon="mdi-checkbox-multiple-marked-circle" />
           </VButton>
@@ -59,7 +59,7 @@
             class="deselect-section"
             title="全不选此子合集"
             type="transparent"
-            @click.stop="setSectionChecked(section, false)"
+            @click.stop="forEachSectionItem(section, it => (it.isChecked = false))"
           >
             <VIcon :size="14" icon="mdi-checkbox-multiple-blank-circle-outline" />
           </VButton>
@@ -67,7 +67,7 @@
             class="invert-section"
             title="反选此子合集"
             type="transparent"
-            @click.stop="invertSectionChecked(section)"
+            @click.stop="forEachSectionItem(section, it => (it.isChecked = !it.isChecked))"
           >
             <VIcon :size="14" icon="mdi-circle-slice-4" />
           </VButton>
@@ -80,24 +80,20 @@
           @after-leave="onSectionTransitionEnd"
         >
           <div v-show="!section.isCollapsed" class="episodes-picker-section-items">
-            <div
-              v-for="entry of section.entries"
-              :key="entry.item.key"
-              class="episodes-picker-item"
-            >
+            <div v-for="item of section.entries" :key="item.key" class="episodes-picker-item">
               <CheckBox
-                v-model="entry.item.isChecked"
+                v-model="item.isChecked"
                 icon-position="left"
-                :data-aid="entry.item.inputItem.aid"
-                :data-cid="entry.item.inputItem.cid"
-                :data-bvid="entry.item.inputItem.bvid"
-                @click.native="shiftSelect($event, entry.item, entry.index)"
+                :data-aid="item.inputItem.aid"
+                :data-cid="item.inputItem.cid"
+                :data-bvid="item.inputItem.bvid"
+                @click.native="shiftSelect($event, item)"
               >
                 <span class="episode-title">
-                  {{ entry.item.title }}
+                  {{ item.title }}
                 </span>
-                <span v-if="entry.item.durationText" class="episode-duration">
-                  {{ entry.item.durationText }}
+                <span v-if="item.durationText" class="episode-duration">
+                  {{ item.durationText }}
                 </span>
               </CheckBox>
             </div>
@@ -111,25 +107,21 @@
 import { VButton, VIcon, CheckBox, VEmpty } from '@/ui'
 import { EpisodeItem } from './episode-item'
 
-interface EpisodeSectionEntry {
-  item: EpisodeItem
-  index: number
-}
 interface EpisodeSection {
   title?: string
   isCollapsed: boolean
-  entries: EpisodeSectionEntry[]
+  entries: EpisodeItem[]
 }
 
-const buildEpisodeSections = (items: EpisodeItem[]) => {
+const buildEpisodeSections = (items: EpisodeItem[]): EpisodeSection[] => {
   const sections: EpisodeSection[] = []
-  items.forEach((item, index) => {
-    const lastSection = sections[sections.length - 1]
-    if (lastSection !== undefined && lastSection.title === item.sectionTitle) {
-      lastSection.entries.push({ item, index })
-      return
+  let lastSection: EpisodeSection | undefined
+  items.forEach(item => {
+    if (lastSection === undefined || lastSection.title !== item.sectionTitle) {
+      lastSection = { title: item.sectionTitle, isCollapsed: false, entries: [] }
+      sections.push(lastSection)
     }
-    sections.push({ title: item.sectionTitle, isCollapsed: false, entries: [{ item, index }] })
+    lastSection.entries.push(item)
   })
   return sections
 }
@@ -157,15 +149,14 @@ export default Vue.extend({
   },
   computed: {
     checkedRatio() {
-      const checked: number = this.episodeItems.filter((it: EpisodeItem) => it.isChecked).length
+      const checked = this.episodeItems.filter(it => it.isChecked).length
       return `(${checked}/${this.episodeItems.length})`
     },
     inputItems() {
-      return this.episodeItems.map((it: EpisodeItem) => it.inputItem)
+      return this.episodeItems.map(it => it.inputItem)
     },
     checkedInputItems() {
-      const items: EpisodeItem[] = this.episodeItems
-      return items.filter(it => it.isChecked).map(it => it.inputItem)
+      return this.episodeItems.filter(it => it.isChecked).map(it => it.inputItem)
     },
   },
   created() {
@@ -183,46 +174,37 @@ export default Vue.extend({
       section.isCollapsed = !section.isCollapsed
     },
     getSectionCheckedRatio(section: EpisodeSection) {
-      const checked = section.entries.filter(it => it.item.isChecked).length
-      return `(${checked}/${section.entries.length})`
+      const { entries } = section
+      return `(${entries.filter(it => it.isChecked).length}/${entries.length})`
     },
-    setSectionChecked(section: EpisodeSection, isChecked: boolean) {
-      section.entries.forEach(it => {
-        it.item.isChecked = isChecked
-      })
+    forEachSectionItem(section: EpisodeSection, action: (item: EpisodeItem) => void) {
+      section.entries.forEach(action)
     },
-    invertSectionChecked(section: EpisodeSection) {
-      section.entries.forEach(it => {
-        it.item.isChecked = !it.item.isChecked
-      })
-    },
-    shiftSelect(e: MouseEvent, item: EpisodeItem, index: number) {
+    shiftSelect(e: MouseEvent, item: EpisodeItem) {
+      const index = this.episodeItems.indexOf(item)
       if (!e.shiftKey || this.lastCheckedEpisodeIndex === -1) {
         // console.log('set lastCheckedEpisodeIndex', index)
         this.lastCheckedEpisodeIndex = index
         return
       }
-      if (e.shiftKey && this.lastCheckedEpisodeIndex !== -1) {
-        ;(this.episodeItems as EpisodeItem[])
-          .slice(
-            Math.min(this.lastCheckedEpisodeIndex, index) + 1,
-            Math.max(this.lastCheckedEpisodeIndex, index),
-          )
-          .forEach(it => {
-            it.isChecked = !it.isChecked
-          })
-        // console.log(
-        //   'shift toggle',
-        //   Math.min(this.lastCheckedEpisodeIndex, index) + 1,
-        //   Math.max(this.lastCheckedEpisodeIndex, index),
-        // )
-        this.lastCheckedEpisodeIndex = index
-        e.preventDefault()
-      }
+      this.episodeItems
+        .slice(
+          Math.min(this.lastCheckedEpisodeIndex, index) + 1,
+          Math.max(this.lastCheckedEpisodeIndex, index),
+        )
+        .forEach(it => {
+          it.isChecked = !it.isChecked
+        })
+      // console.log(
+      //   'shift toggle',
+      //   Math.min(this.lastCheckedEpisodeIndex, index) + 1,
+      //   Math.max(this.lastCheckedEpisodeIndex, index),
+      // )
+      this.lastCheckedEpisodeIndex = index
+      e.preventDefault()
     },
-    forEachItem(action: (item: EpisodeItem, index: number) => void) {
-      const items: EpisodeItem[] = this.episodeItems
-      items.forEach(action)
+    forEachItem(action: (item: EpisodeItem) => void) {
+      this.episodeItems.forEach(action)
     },
     async getEpisodeItems() {
       if (this.episodeItems.length > 0) {

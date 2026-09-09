@@ -7,7 +7,7 @@ export interface EpisodeItem {
   isChecked: boolean
   inputItem: DownloadVideoInputItem
   durationText?: string
-  /** 所属子合集标题, 用于在选集中分组显示, 为空时不显示分组 */
+  /** 所属子合集标题, 用于选集中分组显示 */
   sectionTitle?: string
 }
 export const createEpisodesPicker = (
