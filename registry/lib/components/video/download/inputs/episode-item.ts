@@ -7,6 +7,8 @@ export interface EpisodeItem {
   isChecked: boolean
   inputItem: DownloadVideoInputItem
   durationText?: string
+  /** 所属子合集标题, 用于在选集中分组显示, 为空时不显示分组 */
+  sectionTitle?: string
 }
 export const createEpisodesPicker = (
   fetchEpisodeItems: (instance: any) => Promise<EpisodeItem[]>,
