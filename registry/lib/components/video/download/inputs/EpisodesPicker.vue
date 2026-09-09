@@ -2,33 +2,17 @@
   <div class="episodes-picker download-video-config-section">
     <div class="episodes-picker-header">
       <div class="episodes-picker-title">选集:</div>
-      <div class="episodes-picker-checked-ratio">
-        {{ checkedRatio }}
-      </div>
+      <div class="episodes-picker-checked-ratio">{{ formatRatio(episodeItems) }}</div>
       <div class="episodes-picker-actions">
         <VButton
-          class="select-all"
-          title="全选"
+          v-for="action of selectActions"
+          :key="action.name"
+          :class="action.name"
+          :title="action.title"
           type="transparent"
-          @click="forEachItem(it => (it.isChecked = true))"
+          @click="applySelectAction(action, episodeItems)"
         >
-          <VIcon :size="16" icon="mdi-checkbox-multiple-marked-circle" />
-        </VButton>
-        <VButton
-          class="deselect-all"
-          title="全不选"
-          type="transparent"
-          @click="forEachItem(it => (it.isChecked = false))"
-        >
-          <VIcon :size="16" icon="mdi-checkbox-multiple-blank-circle-outline" />
-        </VButton>
-        <VButton
-          class="invert-selection"
-          title="反选"
-          type="transparent"
-          @click="forEachItem(it => (it.isChecked = !it.isChecked))"
-        >
-          <VIcon :size="16" icon="mdi-circle-slice-4" />
+          <VIcon :size="16" :icon="action.icon" />
         </VButton>
       </div>
     </div>
@@ -46,30 +30,15 @@
         >
           <VIcon class="episodes-picker-section-toggle" :size="14" icon="mdi-chevron-down" />
           <span class="episodes-picker-section-title">{{ section.title }}</span>
-          <span class="episodes-picker-section-ratio">{{ getSectionCheckedRatio(section) }}</span>
+          <span class="episodes-picker-section-ratio">{{ formatRatio(section.entries) }}</span>
           <VButton
-            class="select-section"
-            title="全选此子合集"
+            v-for="action of selectActions"
+            :key="action.name"
+            :title="action.title"
             type="transparent"
-            @click.stop="forEachSectionItem(section, it => (it.isChecked = true))"
+            @click.stop="applySelectAction(action, section.entries)"
           >
-            <VIcon :size="14" icon="mdi-checkbox-multiple-marked-circle" />
-          </VButton>
-          <VButton
-            class="deselect-section"
-            title="全不选此子合集"
-            type="transparent"
-            @click.stop="forEachSectionItem(section, it => (it.isChecked = false))"
-          >
-            <VIcon :size="14" icon="mdi-checkbox-multiple-blank-circle-outline" />
-          </VButton>
-          <VButton
-            class="invert-section"
-            title="反选此子合集"
-            type="transparent"
-            @click.stop="forEachSectionItem(section, it => (it.isChecked = !it.isChecked))"
-          >
-            <VIcon :size="14" icon="mdi-circle-slice-4" />
+            <VIcon :size="14" :icon="action.icon" />
           </VButton>
         </div>
         <transition
@@ -113,6 +82,30 @@ interface EpisodeSection {
   entries: EpisodeItem[]
 }
 
+interface SelectAction {
+  name: string
+  title: string
+  icon: string
+  /** 目标选中状态, 省略时表示反选 */
+  isChecked?: boolean
+}
+
+const selectActions: SelectAction[] = [
+  {
+    name: 'select-all',
+    title: '全选',
+    icon: 'mdi-checkbox-multiple-marked-circle',
+    isChecked: true,
+  },
+  {
+    name: 'deselect-all',
+    title: '全不选',
+    icon: 'mdi-checkbox-multiple-blank-circle-outline',
+    isChecked: false,
+  },
+  { name: 'invert-selection', title: '反选', icon: 'mdi-circle-slice-4' },
+]
+
 const buildEpisodeSections = (items: EpisodeItem[]): EpisodeSection[] => {
   const sections: EpisodeSection[] = []
   let lastSection: EpisodeSection | undefined
@@ -141,6 +134,7 @@ export default Vue.extend({
   },
   data() {
     return {
+      selectActions,
       episodeItems: [] as EpisodeItem[],
       episodeSections: [] as EpisodeSection[],
       maxCheckedItems: 32,
@@ -148,13 +142,6 @@ export default Vue.extend({
     }
   },
   computed: {
-    checkedRatio() {
-      const checked = this.episodeItems.filter(it => it.isChecked).length
-      return `(${checked}/${this.episodeItems.length})`
-    },
-    inputItems() {
-      return this.episodeItems.map(it => it.inputItem)
-    },
     checkedInputItems() {
       return this.episodeItems.filter(it => it.isChecked).map(it => it.inputItem)
     },
@@ -173,12 +160,13 @@ export default Vue.extend({
     toggleSection(section: EpisodeSection) {
       section.isCollapsed = !section.isCollapsed
     },
-    getSectionCheckedRatio(section: EpisodeSection) {
-      const { entries } = section
-      return `(${entries.filter(it => it.isChecked).length}/${entries.length})`
+    formatRatio(items: EpisodeItem[]) {
+      return `(${items.filter(it => it.isChecked).length}/${items.length})`
     },
-    forEachSectionItem(section: EpisodeSection, action: (item: EpisodeItem) => void) {
-      section.entries.forEach(action)
+    applySelectAction(action: SelectAction, items: EpisodeItem[]) {
+      items.forEach(it => {
+        it.isChecked = action.isChecked ?? !it.isChecked
+      })
     },
     shiftSelect(e: MouseEvent, item: EpisodeItem) {
       const index = this.episodeItems.indexOf(item)
@@ -203,9 +191,6 @@ export default Vue.extend({
       this.lastCheckedEpisodeIndex = index
       e.preventDefault()
     },
-    forEachItem(action: (item: EpisodeItem) => void) {
-      this.episodeItems.forEach(action)
-    },
     async getEpisodeItems() {
       if (this.episodeItems.length > 0) {
         return
@@ -219,6 +204,8 @@ export default Vue.extend({
 </script>
 <style lang="scss">
 @import 'common';
+// 折叠高度与箭头旋转共用同一节奏, 保证两者协调
+$collapse-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .episodes-picker {
   &-header {
     @include h-center();
@@ -269,7 +256,7 @@ export default Vue.extend({
       flex-shrink: 0;
       margin-right: 2px;
       opacity: 0.7;
-      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform $collapse-transition;
     }
     &.collapsed &-toggle {
       transform: rotate(-90deg);
@@ -292,9 +279,6 @@ export default Vue.extend({
       }
     }
   }
-  &-section-items {
-    overflow: hidden;
-  }
   &-empty {
     @include h-center();
     justify-content: center;
@@ -303,7 +287,8 @@ export default Vue.extend({
 }
 .episodes-picker-collapse-enter-active,
 .episodes-picker-collapse-leave-active {
-  transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  transition: height $collapse-transition;
 }
 .episodes-picker-collapse-enter,
 .episodes-picker-collapse-leave-to {

@@ -89,21 +89,16 @@ export const videoSeasonBatchInput: DownloadVideoInput = {
       // 存在多个子合集时才需要显示分组标题以区分
       const showSectionTitle = validSections.length > 1
       const totalEpisodesLength = lodash.sumBy(validSections, it => it.episodes.length)
-      return validSections.flatMap((section, sectionIndex) => {
-        const { episodes } = section
+      let page = 0
+      return validSections.flatMap(section => {
         const sectionTitle = showSectionTitle ? section.title : undefined
-        return episodes.map((episode, episodeIndex) => {
-          const currentIndex =
-            episodeIndex +
-            lodash.sumBy(validSections.slice(0, sectionIndex), it => it.episodes.length)
-          const key = episode.cid
-          const page = currentIndex + 1
-          const title = `P${page} ${episode.title}`
+        return section.episodes.map(episode => {
+          page += 1
           const date = getTitleVariablesFromDate(new Date(episode.arc.pubdate * 1000))
           return {
-            key,
-            title,
-            isChecked: currentIndex < instance.maxCheckedItems,
+            key: episode.cid,
+            title: `P${page} ${episode.title}`,
+            isChecked: page <= instance.maxCheckedItems,
             durationText: formatDuration(episode.arc.duration),
             sectionTitle,
             inputItem: {
