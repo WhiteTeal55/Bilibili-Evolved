@@ -9,6 +9,7 @@ import {
   CustomQueryProvider,
   PlayerAgentEventTypes,
   PlayerAgentToggleSubtitleResult,
+  PlayerAgentDanmakuSwitchState,
 } from './types'
 
 export const elementQuery = (selector: string): ElementQuery => {
@@ -72,14 +73,18 @@ export abstract class PlayerAgent
   toggleMute() {
     return click(this.query.control.buttons.volume)
   }
-  toggleDanmaku() {
+  toggleDanmaku(): PlayerAgentDanmakuSwitchState | null {
     const checkbox = this.query.danmakuSwitch.sync() as HTMLInputElement
     if (!checkbox) {
       return null
     }
     checkbox.checked = !checkbox.checked
     raiseEvent(checkbox, 'change')
-    return checkbox.checked
+    // 三态开关(灰度)中「精简弹幕」对应 `indeterminate`, 普通开关固定为 false
+    if (checkbox.indeterminate) {
+      return 'concise'
+    }
+    return checkbox.checked ? 'on' : 'off'
   }
   toggleSubtitle(): PlayerAgentToggleSubtitleResult {
     const closeSwitch = dq('.bpx-player-ctrl-subtitle-close-switch') as HTMLDivElement | null
