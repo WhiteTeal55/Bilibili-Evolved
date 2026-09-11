@@ -191,15 +191,16 @@ export const builtInActions: Record<string, KeyBindingAction> = {
   danmaku: {
     displayName: '弹幕开关',
     run: () => {
-      const result = playerAgent.toggleDanmaku()
-      if (lodash.isNil(result)) {
-        return result
+      const state = playerAgent.toggleDanmaku()
+      if (lodash.isNil(state)) {
+        return state
       }
-      if (result) {
-        showTip('弹幕已开启', 'mdi-comment-text')
-      } else {
-        showTip('弹幕已关闭', 'mdi-comment-text-outline')
-      }
+      const tip = {
+        on: { text: '开启弹幕', icon: 'mdi-comment-text' },
+        concise: { text: '精简弹幕', icon: 'mdi-filter-variant' },
+        off: { text: '关闭弹幕', icon: 'mdi-comment-remove' },
+      }[state]
+      showTip(tip.text, tip.icon)
       return true
     },
   },
