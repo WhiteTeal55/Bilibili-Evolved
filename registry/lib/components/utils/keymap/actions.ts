@@ -4,6 +4,7 @@ import { registerAndGetData } from '@/plugins/data'
 import type { Options } from '.'
 import type { KeyBindingAction, KeyBindingActionContext, KeyEvent } from './bindings'
 import { getActiveElement, simulateClick } from '@/core/utils'
+import { showDanmakuStateTip, showPlayerTip } from '../../../player-tip'
 
 export const keyEventToPointer = (event: KeyEvent): PointerEventInit => {
   return {
@@ -39,44 +40,8 @@ export const changeVideoTime = (delta: number | (() => number)) => () =>
 const JumpForwardLongPressDelay = 300
 const JumpForwardLongPressRate = 3
 
-/** 提示框用的`setTimeout`句柄 */
-let tipTimeoutHandle: number
-/**
- * 显示提示框
- * @param text 文字 (可以 HTML)
- * @param icon MDI 图标 class
- */
-export const showTip = async (text: string, icon: string) => {
-  let tip = dq('.keymap-tip') as HTMLDivElement
-  if (!tip) {
-    const player = (await playerAgent.query.playerArea()) as HTMLElement
-    if (!player) {
-      return
-    }
-    player.insertAdjacentHTML(
-      'afterbegin',
-      /* html */ `
-      <div class="keymap-tip-container">
-        <i class="keymap-tip-icon mdi ${icon}"></i>
-        <div class="keymap-tip">${text}</div>
-      </div>
-    `,
-    )
-    tip = dq('.keymap-tip') as HTMLDivElement
-  }
-  tip.innerHTML = text
-  const container = dq('.keymap-tip-container') as HTMLDivElement
-  const iconElement = dq(container, '.mdi') as HTMLElement
-  iconElement.classList.remove(...iconElement.classList.values())
-  iconElement.classList.add('mdi', icon)
-  if (tipTimeoutHandle) {
-    clearTimeout(tipTimeoutHandle)
-  }
-  container.classList.add('show')
-  tipTimeoutHandle = window.setTimeout(() => {
-    container.classList.remove('show')
-  }, 2000)
-}
+/** 显示播放器中央提示框 */
+export const showTip = showPlayerTip
 export const builtInActions: Record<string, KeyBindingAction> = {
   fullscreen: {
     displayName: '全屏',
@@ -195,12 +160,7 @@ export const builtInActions: Record<string, KeyBindingAction> = {
       if (lodash.isNil(state)) {
         return state
       }
-      const tip = {
-        on: { text: '开启弹幕', icon: 'mdi-comment-text' },
-        concise: { text: '精简弹幕', icon: 'mdi-filter-variant' },
-        off: { text: '关闭弹幕', icon: 'mdi-comment-remove' },
-      }[state]
-      showTip(tip.text, tip.icon)
+      showDanmakuStateTip(state)
       return true
     },
   },

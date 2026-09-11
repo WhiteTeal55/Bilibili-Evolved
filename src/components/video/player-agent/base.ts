@@ -73,6 +73,16 @@ export abstract class PlayerAgent
   toggleMute() {
     return click(this.query.control.buttons.volume)
   }
+  getDanmakuState(): PlayerAgentDanmakuSwitchState | null {
+    const checkbox = this.query.danmakuSwitch.sync() as HTMLInputElement
+    if (!checkbox) {
+      return null
+    }
+    if (checkbox.indeterminate) {
+      return 'concise'
+    }
+    return checkbox.checked ? 'on' : 'off'
+  }
   toggleDanmaku(): PlayerAgentDanmakuSwitchState | null {
     const checkbox = this.query.danmakuSwitch.sync() as HTMLInputElement
     if (!checkbox) {
@@ -80,11 +90,14 @@ export abstract class PlayerAgent
     }
     checkbox.checked = !checkbox.checked
     raiseEvent(checkbox, 'change')
-    // 三态开关(灰度)中「精简弹幕」对应 `indeterminate`, 普通开关固定为 false
-    if (checkbox.indeterminate) {
-      return 'concise'
-    }
-    return checkbox.checked ? 'on' : 'off'
+    return this.getDanmakuState()
+  }
+  getSupportedDanmakuStates(): PlayerAgentDanmakuSwitchState[] {
+    const isThreeState = this.query.danmakuSwitch
+      .sync()
+      ?.closest('.bpx-player-dm-switch')
+      ?.classList.contains('bui-danmaku-switch-new')
+    return isThreeState ? ['on', 'concise', 'off'] : ['on', 'off']
   }
   toggleSubtitle(preferredLanguage?: string): PlayerAgentToggleSubtitleResult {
     const closeSwitch = dq('.bpx-player-ctrl-subtitle-close-switch') as HTMLDivElement | null
