@@ -1,12 +1,12 @@
 import { childListSubtree } from '@/core/observer'
 import { select } from '@/core/spin-query'
-import { matchUrlPattern, raiseEvent } from '@/core/utils'
+import { raiseEvent } from '@/core/utils'
 import { useScopedConsole } from '@/core/utils/log'
-import { liveUrls } from '@/core/utils/urls'
+import { liveUrls, matchCurrentPage } from '@/core/utils/urls'
 
 const controllerSelector =
-  '.bilibili-live-player-video-controller, .web-player-controller-wrap:not(.web-player-controller-bg)'
-const controlBarSelector = '.control-area'
+  ':is(.bilibili-live-player-video-controller, .web-player-controller-wrap:not(.web-player-controller-bg))'
+const controlBarSelector = `${controllerSelector} .control-area`
 
 /**
  * 调出直播控制栏, 并执行回调. (调出后过一定时间会自动关闭)
@@ -21,27 +21,25 @@ export const withControlBar = async (
     return
   }
   raiseEvent(livePlayer, 'mousemove')
-  const controllerContainer = dq(livePlayer, controllerSelector)
-  const controlBar = controllerContainer && dq(controllerContainer, controlBarSelector)
+  const controlBar = dq(livePlayer, controlBarSelector) as HTMLElement
   if (!controlBar) {
     console.warn('controlBar not found')
     return
   }
-  await callback(controlBar as HTMLElement)
+  await callback(controlBar)
   raiseEvent(livePlayer, 'mouseleave')
 }
 /**
- * 当直播的控制栏显示时, 执行回调, 可用于插入一些额外元素
- * (鼠标进入/移出会创建/销毁控制栏的DOM, 所以想要额外元素常驻就得用这种方式)
- * 播放器重载会重建控制栏的DOM, 因此这里监听稳定存在的播放器挂载点, 每次相关变更时重新定位控制栏
- * - init: 只执行一次
- * - callback: 每次控制栏创建时执行
+ * 控制栏显示时执行回调, 可用于向控制栏插入常驻的额外元素
+ * 控制栏的DOM会随鼠标移出销毁, 播放器重载也会重建, 因此监听稳定的播放器挂载点, 在其重建时重新插入
+ * - init: 控制栏容器首次出现时执行一次
+ * - callback: 控制栏每次显示时执行
  */
 export const waitForControlBar = async (config: {
   init?: (container: HTMLElement) => void
   callback?: (controlBar: HTMLElement) => void
 }) => {
-  if (!liveUrls.some(url => matchUrlPattern(url))) {
+  if (!matchCurrentPage(liveUrls)) {
     return
   }
   const player = (await select('.live-player-mounter')) as HTMLElement
@@ -49,36 +47,24 @@ export const waitForControlBar = async (config: {
     return
   }
 
-  const { init, callback } = config
   let initialized = false
-
-  const handleControlBar = () => {
-    const controllerContainer = dq(player, controllerSelector) as HTMLElement
-    if (!controllerContainer) {
+  // 控制栏每次显示都会重建DOM, 用它本身判断是否是新出现的控制栏
+  let lastControlBar: HTMLElement | null = null
+  childListSubtree(player, () => {
+    if (!initialized) {
+      const controller = dq(player, controllerSelector)
+      if (controller) {
+        initialized = true
+        config.init?.(controller as HTMLElement)
+      }
+    }
+    const controlBar = dq(player, controlBarSelector) as HTMLElement
+    if (controlBar === lastControlBar) {
       return
     }
-    if (!initialized) {
-      initialized = true
-      init?.(controllerContainer)
-    }
-    const controlBar = dq(controllerContainer, controlBarSelector) as HTMLElement
+    lastControlBar = controlBar
     if (controlBar) {
-      callback?.(controlBar)
-    }
-  }
-
-  childListSubtree(player, records => {
-    const controlBarRelated =
-      records.length === 0 ||
-      records.some(record =>
-        Array.from(record.addedNodes).some(
-          node =>
-            node instanceof HTMLElement &&
-            (node.matches(controlBarSelector) || node.querySelector(controlBarSelector) !== null),
-        ),
-      )
-    if (controlBarRelated) {
-      handleControlBar()
+      config.callback?.(controlBar)
     }
   })
 }

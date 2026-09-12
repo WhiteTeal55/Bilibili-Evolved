@@ -25,16 +25,15 @@ const exitConfirmHandler = (e: BeforeUnloadEvent) => {
 const getLiveDuration = () => dq('.control-area .text.time')?.textContent?.trim() || undefined
 
 const addScreenshot = (video: HTMLVideoElement, duration?: string) => {
-  const screenshot = new Screenshot(video, video.currentTime, false, duration)
   if (!screenShotsList) {
     screenShotsList = mountVueComponent(ScreenshotContainer)
     document.body.insertAdjacentElement('beforeend', screenShotsList.$el)
   }
-  screenShotsList.screenshots.unshift(screenshot)
+  screenShotsList.screenshots.unshift(new Screenshot(video, video.currentTime, false, duration))
 }
 
 const takeLiveScreenshot = async () => {
-  const video = dq('.live-player-mounter video, .live-player-ctnr video') as HTMLVideoElement
+  const video = dq('.live-player-mounter video, .live-player-ctnr video')
   if (!(video instanceof HTMLVideoElement)) {
     const { logError } = await import('@/core/utils/log')
     logError('直播截图失败: 无法定位直播视频元素.')
@@ -49,8 +48,8 @@ const takeLiveScreenshot = async () => {
   await withControlBar(() => addScreenshot(video, getLiveDuration()))
 }
 
-const insertScreenshotButton = (controlBar: Element) => {
-  if (!enabled || dq(controlBar, `.${buttonClass}`)) {
+const insertScreenshotButton = (controlBar: Element | null) => {
+  if (!enabled || !controlBar || dq(controlBar, `.${buttonClass}`)) {
     return
   }
   if (!screenshotButton) {
@@ -89,10 +88,7 @@ export const component = defineComponentMetadata({
   urlInclude: liveUrls,
   reload: () => {
     enable()
-    const controlBar = dq('.control-area')
-    if (controlBar) {
-      insertScreenshotButton(controlBar)
-    }
+    insertScreenshotButton(dq('.control-area'))
   },
   unload: () => {
     enabled = false
