@@ -8,7 +8,7 @@ const integratedDarkModeClass = 'integrated-dark'
 const darkMetaColor = '#111'
 
 // 不支持深色模式的页面
-const unsupportedUrls = [
+const urlExclude = [
   /^https:\/\/app\.bilibili\.com\//,
   /^https:\/\/b\.bilibili\.com\//,
   /^https:\/\/d\.bilibili\.com\//,
@@ -128,7 +128,7 @@ const watchHtmlTheme = () => {
 export const component = defineComponentMetadata({
   name,
   displayName: '深色模式',
-  urlExclude: unsupportedUrls,
+  urlExclude,
   entry: () => {
     cookieStore.addEventListener('change', cookieChangeHandler)
     watchHtmlTheme()
