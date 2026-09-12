@@ -2,11 +2,14 @@ import { addControlBarButton } from '@/components/video/video-control-bar'
 import { mountVueComponent } from '@/core/utils'
 import { playerUrls } from '@/core/utils/urls'
 import { KeyBindingAction } from '../../../utils/keymap/bindings'
-import { Screenshot, takeScreenshot } from './screenshot'
+import {
+  Screenshot,
+  ScreenshotDisabledClass,
+  takeScreenshot,
+} from '../../../common/screenshot/screenshot'
 import { defineComponentMetadata } from '@/components/define'
-import ScreenshotContainer from './VideoScreenshotContainer.vue'
+import ScreenshotContainer from '../../../common/screenshot/ScreenshotContainer.vue'
 
-export const VideoScreenshotDisabledClass = 'video-screenshot-disable'
 let screenShotsList: Vue & {
   screenshots: Screenshot[]
 }
@@ -49,11 +52,11 @@ export const component = defineComponentMetadata({
   entry,
   urlInclude: playerUrls,
   reload: () => {
-    document.body.classList.remove(VideoScreenshotDisabledClass)
+    document.body.classList.remove(ScreenshotDisabledClass)
     window.addEventListener('beforeunload', exitConfirmHandler)
   },
   unload: () => {
-    document.body.classList.add(VideoScreenshotDisabledClass)
+    document.body.classList.add(ScreenshotDisabledClass)
     window.removeEventListener('beforeunload', exitConfirmHandler)
   },
   plugin: {
