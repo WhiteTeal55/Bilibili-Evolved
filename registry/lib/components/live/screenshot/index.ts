@@ -1,5 +1,5 @@
 import { defineComponentMetadata } from '@/components/define'
-import { waitForControlBar } from '@/components/live/live-control-bar'
+import { waitForControlBar, withControlBar } from '@/components/live/live-control-bar'
 import { mountVueComponent } from '@/core/utils'
 import { liveUrls } from '@/core/utils/urls'
 import { KeyBindingAction } from '../../utils/keymap/bindings'
@@ -12,7 +12,7 @@ const buttonClass = 'be-live-screenshot-button'
 let screenShotsList: Vue & {
   screenshots: Screenshot[]
 }
-let screenshotButton: HTMLElement
+let screenshotButton: Element
 let enabled = false
 
 const exitConfirmHandler = (e: BeforeUnloadEvent) => {
@@ -21,10 +21,16 @@ const exitConfirmHandler = (e: BeforeUnloadEvent) => {
   }
 }
 
-/** 直播已持续的时间, 直接取控制栏上显示的时间 */
-const getLiveDuration = () => {
-  const timeText = dq('.control-area .text.time')?.textContent?.trim()
-  return timeText || undefined
+/** 控制栏上显示的直播已持续时间 */
+const getLiveDuration = () => dq('.control-area .text.time')?.textContent?.trim() || undefined
+
+const addScreenshot = (video: HTMLVideoElement, duration?: string) => {
+  const screenshot = new Screenshot(video, video.currentTime, false, duration)
+  if (!screenShotsList) {
+    screenShotsList = mountVueComponent(ScreenshotContainer)
+    document.body.insertAdjacentElement('beforeend', screenShotsList.$el)
+  }
+  screenShotsList.screenshots.unshift(screenshot)
 }
 
 const takeLiveScreenshot = async () => {
@@ -34,36 +40,41 @@ const takeLiveScreenshot = async () => {
     logError('直播截图失败: 无法定位直播视频元素.')
     return
   }
-  const screenshot = new Screenshot(video, video.currentTime, false, getLiveDuration())
-  if (!screenShotsList) {
-    screenShotsList = mountVueComponent(ScreenshotContainer)
-    document.body.insertAdjacentElement('beforeend', screenShotsList.$el)
+  const duration = getLiveDuration()
+  if (duration) {
+    addScreenshot(video, duration)
+    return
   }
-  screenShotsList.screenshots.unshift(screenshot)
+  // 控制栏未显示时取不到持续时间, 先临时调出控制栏再截图
+  await withControlBar(() => addScreenshot(video, getLiveDuration()))
 }
 
-const insertScreenshotButton = (controlBar: HTMLElement) => {
+const insertScreenshotButton = (controlBar: Element) => {
   if (!enabled || dq(controlBar, `.${buttonClass}`)) {
     return
   }
   if (!screenshotButton) {
-    screenshotButton = mountVueComponent(LiveScreenshotButton).$el as HTMLElement
+    screenshotButton = mountVueComponent(LiveScreenshotButton).$el
     const button = screenshotButton.querySelector('button') as HTMLButtonElement
     button.addEventListener('click', takeLiveScreenshot)
   }
-  const volume = dq(controlBar, '.volume') as HTMLElement
+  const volume = dq(controlBar, '.volume')
   if (volume) {
     volume.insertAdjacentElement('afterend', screenshotButton)
     return
   }
-  const leftArea = dq(controlBar, '.left-area') as HTMLElement
-  ;(leftArea ?? controlBar).appendChild(screenshotButton)
+  ;(dq(controlBar, '.left-area') ?? controlBar).appendChild(screenshotButton)
+}
+
+const enable = () => {
+  enabled = true
+  document.body.classList.remove(ScreenshotDisabledClass)
+  window.addEventListener('beforeunload', exitConfirmHandler)
 }
 
 const entry = () => {
-  enabled = true
+  enable()
   waitForControlBar({ callback: insertScreenshotButton })
-  window.addEventListener('beforeunload', exitConfirmHandler)
 }
 
 export const component = defineComponentMetadata({
@@ -77,10 +88,8 @@ export const component = defineComponentMetadata({
   entry,
   urlInclude: liveUrls,
   reload: () => {
-    enabled = true
-    document.body.classList.remove(ScreenshotDisabledClass)
-    window.addEventListener('beforeunload', exitConfirmHandler)
-    const controlBar = dq('.control-area') as HTMLElement
+    enable()
+    const controlBar = dq('.control-area')
     if (controlBar) {
       insertScreenshotButton(controlBar)
     }

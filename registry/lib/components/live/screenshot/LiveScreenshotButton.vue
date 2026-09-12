@@ -19,10 +19,9 @@ export default Vue.extend({
 .be-live-screenshot-tip.tip-wrap {
   position: relative;
 
-  // 复用直播播放器原生按钮提示框的样式 (.tip-wrap / .tip.panel),
-  // 这里只补充原生 scoped 样式未提供的显隐动画和文本布局。
-  // 动画与原生一致: 200ms cubicOut, 从下方 10px 滑入并淡入到 0.9 不透明度。
-  // 用独立的 translate 属性做位移, 避免覆盖 .panel 用于定位的 transform。
+  // 复用原生提示框样式 (.tip.panel), 只补充原生 scoped 样式未提供的显隐动画和文本布局。
+  // 动画与原生一致: 200ms cubicOut, 从下方 10px 滑入并淡入到 0.9 不透明度;
+  // 位移动画用 translate 属性而非 transform, 以免覆盖 .panel 用于定位的 transform。
   .tip.panel {
     visibility: hidden;
     opacity: 0;
@@ -55,9 +54,5 @@ export default Vue.extend({
   color: #fff;
   cursor: pointer;
   outline: none !important;
-  .be-icon {
-    color: #fff;
-    fill: #fff;
-  }
 }
 </style>

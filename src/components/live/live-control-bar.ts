@@ -6,8 +6,7 @@ import { liveUrls } from '@/core/utils/urls'
 
 const controllerSelector =
   '.bilibili-live-player-video-controller, .web-player-controller-wrap:not(.web-player-controller-bg)'
-const controlBarMutationSelector =
-  '.control-area, .web-player-controller-wrap, .bilibili-live-player-video-controller'
+const controlBarSelector = '.control-area'
 
 /**
  * 调出直播控制栏, 并执行回调. (调出后过一定时间会自动关闭)
@@ -22,12 +21,13 @@ export const withControlBar = async (
     return
   }
   raiseEvent(livePlayer, 'mousemove')
-  const controlBar = dq(livePlayer, '.web-player-controller-wrap .control-area') as HTMLElement
+  const controllerContainer = dq(livePlayer, controllerSelector)
+  const controlBar = controllerContainer && dq(controllerContainer, controlBarSelector)
   if (!controlBar) {
     console.warn('controlBar not found')
     return
   }
-  await callback(controlBar)
+  await callback(controlBar as HTMLElement)
   raiseEvent(livePlayer, 'mouseleave')
 }
 /**
@@ -61,7 +61,7 @@ export const waitForControlBar = async (config: {
       initialized = true
       init?.(controllerContainer)
     }
-    const controlBar = dq(controllerContainer, '.control-area') as HTMLElement
+    const controlBar = dq(controllerContainer, controlBarSelector) as HTMLElement
     if (controlBar) {
       callback?.(controlBar)
     }
@@ -74,8 +74,7 @@ export const waitForControlBar = async (config: {
         Array.from(record.addedNodes).some(
           node =>
             node instanceof HTMLElement &&
-            (node.matches(controlBarMutationSelector) ||
-              node.querySelector(controlBarMutationSelector) !== null),
+            (node.matches(controlBarSelector) || node.querySelector(controlBarSelector) !== null),
         ),
       )
     if (controlBarRelated) {
