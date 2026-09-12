@@ -69,6 +69,10 @@ const entry = () => {
 export const component = defineComponentMetadata({
   name: 'liveScreenshot',
   displayName: '启用直播截图',
+  author: {
+    name: 'WhiteTeal55',
+    link: 'https://github.com/WhiteTeal55',
+  },
   tags: [componentsTags.live],
   entry,
   urlInclude: liveUrls,
