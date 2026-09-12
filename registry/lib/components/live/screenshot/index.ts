@@ -71,11 +71,6 @@ const enable = () => {
   window.addEventListener('beforeunload', exitConfirmHandler)
 }
 
-const entry = () => {
-  enable()
-  waitForControlBar({ callback: insertScreenshotButton })
-}
-
 export const component = defineComponentMetadata({
   name: 'liveScreenshot',
   displayName: '启用直播截图',
@@ -84,8 +79,11 @@ export const component = defineComponentMetadata({
     link: 'https://github.com/WhiteTeal55',
   },
   tags: [componentsTags.live],
-  entry,
   urlInclude: liveUrls,
+  entry: () => {
+    enable()
+    waitForControlBar({ callback: insertScreenshotButton })
+  },
   reload: () => {
     enable()
     insertScreenshotButton(dq('.control-area'))
